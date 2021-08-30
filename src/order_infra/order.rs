@@ -3,12 +3,14 @@ use std::fmt;
 use std::str;
 
 /// A trade must have a direction (ie buy or sell); this enum present the two options.
+#[derive(PartialEq, Debug)]
 pub enum OrderType {
     BUY,
     SELL,
 }
 
 ///
+#[derive(PartialEq, Debug)]
 pub struct SingleOrder {
     order_time: i32,
     participant_code: String,
@@ -31,12 +33,12 @@ impl fmt::Display for ParamMissing {
 impl error::Error for ParamMissing {}
 
 #[derive(Debug)]
-struct InvalidOrderType<'a> {
-    order_type_str: &'a str,
+struct InvalidOrderType {
+    order_type_str: String,
 }
 
-impl fmt::Display for InvalidOrderType<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Display for InvalidOrderType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
             "{} is not an order type; must be BUY OR SELL",
@@ -45,7 +47,7 @@ impl fmt::Display for InvalidOrderType<'_> {
     }
 }
 
-impl error::Error for InvalidOrderType<'_> {}
+impl error::Error for InvalidOrderType {}
 
 fn iter_name_error<'a>(
     order_iter: &'a mut str::SplitWhitespace,
@@ -58,9 +60,15 @@ fn iter_name_error<'a>(
 /// Creates a `SingleOrder` from a `String` representation of an order. This requires order fields
 /// to be seperated by spaces.
 ///
+/// # Arguments
+/// `order_str` - A string that holds the details of the order, with
 /// # Examples
+/// ```
+/// let order_a = "1 BOFASEC 50 100 BUY"
 ///
-pub fn order_from_string(order_str: &'static String) -> Result<SingleOrder, Box<dyn error::Error>> {
+/// ```
+///
+pub fn order_from_string(order_str: String) -> Result<SingleOrder, Box<dyn error::Error>> {
     let mut order_iter = order_str.split_whitespace();
     let order_time = order_iter
         .next()
@@ -94,7 +102,7 @@ pub fn order_from_string(order_str: &'static String) -> Result<SingleOrder, Box<
         "BUY" => Ok(OrderType::BUY),
         "SELL" => Ok(OrderType::SELL),
         _ => Err(InvalidOrderType {
-            order_type_str: direction_str,
+            order_type_str: direction_str.to_string(),
         }),
     }?;
     Ok(SingleOrder {
@@ -104,4 +112,22 @@ pub fn order_from_string(order_str: &'static String) -> Result<SingleOrder, Box<
         size: size,
         direction: direction,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn parse_basic_order() {
+        let buy_ord_str = "1 BOFASEC 50.0 100 BUY".to_string();
+        let buy_ord_check = SingleOrder {
+            order_time: 1,
+            direction: OrderType::BUY,
+            price: 50.0,
+            size: 100,
+            participant_code: "BOFASEC".to_string(),
+        };
+        let buy_ord = order_from_string(buy_ord_str).unwrap();
+        assert_eq!(buy_ord, buy_ord_check)
+    }
 }
