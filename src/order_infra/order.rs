@@ -120,4 +120,18 @@ mod tests {
         let buy_ord = order_from_string(buy_ord_str).unwrap();
         assert_eq!(buy_ord, buy_ord_check)
     }
+    #[test]
+    fn parse_basic_sell_order() {
+        let sell_ord_str = "1 BOFASEC FB 75.0 100 SELL".to_string();
+        let sell_ord_check = SingleOrder {
+            order_time: 1,
+            direction: OrderType::SELL,
+            security_name: "FB".to_string(),
+            price: 75.0,
+            size: 100,
+            participant_code: "BOFASEC".to_string(),
+        };
+        let buy_ord = order_from_string(sell_ord_str).unwrap();
+        assert_eq!(buy_ord, sell_ord_check)
+    }
 }
