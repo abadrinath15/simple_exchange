@@ -14,6 +14,7 @@ pub enum OrderType {
 pub struct SingleOrder {
     order_time: i32,
     participant_code: String,
+    security_name: String,
     price: f32,
     size: i32,
     pub(super) direction: OrderType,
@@ -61,43 +62,30 @@ fn iter_name_error<'a>(
 /// to be seperated by spaces.
 ///
 /// # Arguments
-/// `order_str` - A string that holds the details of the order, with
+/// `order_str` - A string that holds the details of the order, with the parameters seperated by
+/// spaces.
 /// # Examples
 /// ```
-/// let order_a = "1 BOFASEC 50 100 BUY"
-///
+/// let buy_ord_str = "1 BOFASEC 50.0 100 BUY".to_string();
+/// let buy_ord_check = SingleOrder {
+///     order_time: 1,
+///     direction: OrderType::BUY,
+///     price: 50.0,
+///     size: 100,
+/// participant_code: "BOFASEC".to_string(),
+/// };
+/// let buy_ord = order_from_string(buy_ord_str).unwrap();
+/// assert_eq!(buy_ord, buy_ord_check)
 /// ```
 ///
 pub fn order_from_string(order_str: String) -> Result<SingleOrder, Box<dyn error::Error>> {
     let mut order_iter = order_str.split_whitespace();
-    let order_time = order_iter
-        .next()
-        .ok_or(ParamMissing {
-            param_name: "Order time".to_string(),
-        })?
-        .parse::<i32>()?;
-    let part_code = order_iter
-        .next()
-        .ok_or(ParamMissing {
-            param_name: "Participant code".to_string(),
-        })?
-        .to_string();
-    let price = order_iter
-        .next()
-        .ok_or(ParamMissing {
-            param_name: "Price".to_string(),
-        })?
-        .parse::<f32>()?;
-    let size = order_iter
-        .next()
-        .ok_or(ParamMissing {
-            param_name: "Size".to_string(),
-        })?
-        .parse::<i32>()?;
-
-    let direction_str = order_iter.next().ok_or(ParamMissing {
-        param_name: "Order type".to_string(),
-    })?;
+    let order_time = iter_name_error(&mut order_iter, "Order time")?.parse::<i32>()?;
+    let part_code = iter_name_error(&mut order_iter, "Participant code")?.to_string();
+    let sec_name = iter_name_error(&mut order_iter, "Security name")?.to_string();
+    let price = iter_name_error(&mut order_iter, "Price")?.parse::<f32>()?;
+    let size = iter_name_error(&mut order_iter, "Size")?.parse::<i32>()?;
+    let direction_str = iter_name_error(&mut order_iter, "Order type")?;
     let direction = match direction_str {
         "BUY" => Ok(OrderType::BUY),
         "SELL" => Ok(OrderType::SELL),
@@ -108,6 +96,7 @@ pub fn order_from_string(order_str: String) -> Result<SingleOrder, Box<dyn error
     Ok(SingleOrder {
         order_time: order_time,
         participant_code: part_code,
+        security_name: sec_name,
         price: price,
         size: size,
         direction: direction,
@@ -118,11 +107,12 @@ pub fn order_from_string(order_str: String) -> Result<SingleOrder, Box<dyn error
 mod tests {
     use super::*;
     #[test]
-    fn parse_basic_order() {
-        let buy_ord_str = "1 BOFASEC 50.0 100 BUY".to_string();
+    fn parse_basic_buy_order() {
+        let buy_ord_str = "1 BOFASEC AAPL 50.0 100 BUY".to_string();
         let buy_ord_check = SingleOrder {
             order_time: 1,
             direction: OrderType::BUY,
+            security_name: "AAPL".to_string(),
             price: 50.0,
             size: 100,
             participant_code: "BOFASEC".to_string(),
