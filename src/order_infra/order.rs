@@ -9,7 +9,7 @@ pub enum OrderType {
     SELL,
 }
 
-///
+/// The basic structure of an order, containing fields an order book would require.
 #[derive(PartialEq, Debug)]
 pub struct SingleOrder {
     order_time: i32,
@@ -20,6 +20,8 @@ pub struct SingleOrder {
     pub(super) direction: OrderType,
 }
 
+/// An error type for parsing the order string, used if the string doesn't contain all the
+/// requisite fields for an order.
 #[derive(Debug)]
 struct ParamMissing {
     param_name: String,
@@ -33,6 +35,8 @@ impl fmt::Display for ParamMissing {
 
 impl error::Error for ParamMissing {}
 
+/// An error if the direction paramter isn't "BUY" or "SELL", since that's really all orders
+/// can have...
 #[derive(Debug)]
 struct InvalidOrderType {
     order_type_str: String,
@@ -50,6 +54,7 @@ impl fmt::Display for InvalidOrderType {
 
 impl error::Error for InvalidOrderType {}
 
+#[doc(hidden)]
 fn iter_name_error<'a>(
     order_iter: &'a mut str::SplitWhitespace,
     param_name: &str,
@@ -67,15 +72,11 @@ fn iter_name_error<'a>(
 /// # Examples
 /// ```
 /// let buy_ord_str = "1 BOFASEC 50.0 100 BUY".to_string();
-/// let buy_ord_check = SingleOrder {
-///     order_time: 1,
-///     direction: OrderType::BUY,
-///     price: 50.0,
-///     size: 100,
-/// participant_code: "BOFASEC".to_string(),
-/// };
 /// let buy_ord = order_from_string(buy_ord_str).unwrap();
-/// assert_eq!(buy_ord, buy_ord_check)
+/// ```
+/// ```
+/// let sell_ord_str = "1 BOFASEC FB 75.0 100 SELL".to_string();
+/// let sell_ord = order_from_string(sell_ord_str).unwrap();
 /// ```
 ///
 pub fn order_from_string(order_str: String) -> Result<SingleOrder, Box<dyn error::Error>> {
@@ -131,7 +132,21 @@ mod tests {
             size: 100,
             participant_code: "BOFASEC".to_string(),
         };
-        let buy_ord = order_from_string(sell_ord_str).unwrap();
-        assert_eq!(buy_ord, sell_ord_check)
+        let sell_ord = order_from_string(sell_ord_str).unwrap();
+        assert_eq!(sell_ord, sell_ord_check)
+    }
+    #[test]
+    fn parse_price_as_int() {
+        let sell_ord_str = "1 BOFASEC FB 75 100 SELL".to_string();
+        let sell_ord_check = SingleOrder {
+            order_time: 1,
+            direction: OrderType::SELL,
+            security_name: "FB".to_string(),
+            price: 75.0,
+            size: 100,
+            participant_code: "BOFASEC".to_string(),
+        };
+        let sell_ord = order_from_string(sell_ord_str).unwrap();
+        assert_eq!(sell_ord, sell_ord_check)
     }
 }
