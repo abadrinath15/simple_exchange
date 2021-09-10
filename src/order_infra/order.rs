@@ -1,3 +1,4 @@
+use ordered_float;
 use std::error;
 use std::fmt;
 use std::str;
@@ -12,10 +13,10 @@ pub enum OrderType {
 /// The basic structure of an order, containing fields an order book would require.
 #[derive(PartialEq, Debug)]
 pub struct SingleOrder {
-    order_time: i32,
+    pub order_time: i32,
     participant_code: String,
     security_name: String,
-    price: f32,
+    pub price: ordered_float::NotNan<f32>,
     size: i32,
     pub(super) direction: OrderType,
 }
@@ -84,7 +85,8 @@ pub fn order_from_string(order_str: String) -> Result<SingleOrder, Box<dyn error
     let order_time = iter_name_error(&mut order_iter, "Order time")?.parse::<i32>()?;
     let part_code = iter_name_error(&mut order_iter, "Participant code")?.to_string();
     let sec_name = iter_name_error(&mut order_iter, "Security name")?.to_string();
-    let price = iter_name_error(&mut order_iter, "Price")?.parse::<f32>()?;
+    let price =
+        ordered_float::NotNan::new(iter_name_error(&mut order_iter, "Price")?.parse::<f32>()?)?;
     let size = iter_name_error(&mut order_iter, "Size")?.parse::<i32>()?;
     let direction_str = iter_name_error(&mut order_iter, "Order type")?;
     let direction = match direction_str {
@@ -114,7 +116,7 @@ mod tests {
             order_time: 1,
             direction: OrderType::BUY,
             security_name: "AAPL".to_string(),
-            price: 50.0,
+            price: ordered_float::NotNan::new_unchecked(50.0),
             size: 100,
             participant_code: "BOFASEC".to_string(),
         };
@@ -128,7 +130,7 @@ mod tests {
             order_time: 1,
             direction: OrderType::SELL,
             security_name: "FB".to_string(),
-            price: 75.0,
+            price: ordered_float::NotNan::new_unchecked(75.0),
             size: 100,
             participant_code: "BOFASEC".to_string(),
         };
@@ -142,7 +144,7 @@ mod tests {
             order_time: 1,
             direction: OrderType::SELL,
             security_name: "FB".to_string(),
-            price: 75.0,
+            price: ordered_float::NotNan::new_unchecked(75.0),
             size: 100,
             participant_code: "BOFASEC".to_string(),
         };
